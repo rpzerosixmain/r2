@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'irb'
+require 'irb/completion'
+
+require 'bundler/setup'
+require 'dotenv/load'
+
+require 'r2'
+
+IRB.start(__FILE__)
