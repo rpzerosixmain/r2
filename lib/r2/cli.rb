@@ -23,28 +23,28 @@ module R2
 
     desc 'upload KEY PATH', 'Upload a file to R2'
     def upload(key, path)
-      result = Commands::Upload.new(storage).call(key, path, options)
+      result = Commands::UploadFile.new(storage).call(key, path, options)
 
       say("[R2] uploaded key=#{result[:key]}")
     end
 
     desc 'download KEY PATH', 'Download a file from R2'
     def download(key, path)
-      result = Commands::Download.new(storage).call(key, path, options)
+      result = Commands::DownloadFile.new(storage).call(key, path, options)
 
       say("[R2] downloaded key=#{result[:key]} -> #{path}")
     end
 
     desc 'delete KEY', 'Remove a file from R2'
     def delete(key)
-      result = Commands::Delete.new(storage).call(key, options)
+      result = Commands::DeleteFile.new(storage).call(key, options)
 
       say("[R2] deleted key=#{result[:key]}")
     end
 
     desc 'list', 'List files in R2 bucket'
     def list
-      result = Commands::List.new(storage).call(options)
+      result = Commands::ListFiles.new(storage).call(options)
 
       if result[:items].empty?
         say('[R2] empty bucket')
@@ -59,7 +59,7 @@ module R2
     private
 
     def storage
-      @storage ||= R2::Storage.build
+      @storage ||= R2::Storage::Client.build
     end
   end
 end

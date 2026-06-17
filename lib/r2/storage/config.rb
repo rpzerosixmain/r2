@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module R2
-  class Storage
+  module Storage
     class Config
       attr_reader :access_key_id, :secret_access_key, :endpoint, :region
 
