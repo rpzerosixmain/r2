@@ -4,6 +4,8 @@ require 'thor'
 
 module R2
   class CLI < Thor
+    require_relative 'cli/gateway'
+
     def self.exit_on_failure?
       true
     end
@@ -51,7 +53,7 @@ module R2
     private
 
     def gateway
-      @gateway ||= R2::Gateway.new(client)
+      @gateway ||= R2::CLI::Gateway.new(client)
     end
 
     def client
