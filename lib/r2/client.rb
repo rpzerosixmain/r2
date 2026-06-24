@@ -1,42 +1,28 @@
 # frozen_string_literal: true
 
 require 'aws-sdk-s3'
+require 'logger'
 
 module R2
-  class Result
-    attr_reader :key,
-                :bucket,
-                :etag,
-                :body
-
-    def initialize(key:, bucket:, etag: nil, body: nil)
-      @key = key
-      @bucket = bucket
-      @etag = etag
-      @body = body
-    end
-
-    def to_h
-      {
-        key: key,
-        bucket: bucket,
-        etag: etag,
-        body: body,
-      }
-    end
-  end
-
   class Client
-    ACCESS_KEY_ID     = ENV.fetch('R2_ACCESS_KEY_ID')
-    SECRET_ACCESS_KEY = ENV.fetch('R2_SECRET_ACCESS_KEY')
-    ENDPOINT          = ENV.fetch('R2_ENDPOINT')
-    REGION            = ENV.fetch('R2_REGION', 'auto')
+    class Result
+      attr_reader :key, :etag, :body
+
+      def initialize(key:, etag: nil, body: nil)
+        @key = key
+        @etag = etag
+        @body = body
+      end
+    end
+
+    attr_reader :logger
 
     def initialize(
-      access_key_id: ACCESS_KEY_ID,
-      secret_access_key: SECRET_ACCESS_KEY,
-      endpoint: ENDPOINT,
-      region: REGION
+      access_key_id:,
+      secret_access_key:,
+      endpoint:,
+      region: 'auto',
+      logger: Logger.new($stderr)
     )
       @s3 = Aws::S3::Client.new(
         access_key_id: access_key_id,
@@ -44,56 +30,68 @@ module R2
         endpoint: endpoint,
         region: region,
       )
+
+      @logger = logger
     end
 
     def list(bucket:)
-      @s3.list_objects_v2(bucket: bucket).contents.map do |object|
+      logger.info("list:start bucket=#{bucket}")
+
+      result = @s3.list_objects_v2(bucket: bucket).contents.map do |object|
         Result.new(
           key: object.key,
-          bucket: bucket,
-          etag: object.etag,
+          etag: object.etag
         )
       end
+
+      logger.info("list:ok bucket=#{bucket} count=#{result.size}")
+
+      result
     end
 
     def upload(bucket:, key:, body:)
-      resp = @s3.put_object(
+      logger.info("upload:start bucket=#{bucket} key=#{key}")
+
+      @s3.put_object(
         bucket: bucket,
         key: key,
         body: body,
       )
 
-      Result.new(
-        key: key,
-        bucket: bucket,
-        etag: resp.etag,
-      )
+      logger.info("upload:ok bucket=#{bucket} key=#{key}")
+
+      Result.new(key: key)
     end
 
     def download(bucket:, key:)
+      logger.info("download:start bucket=#{bucket} key=#{key}")
+
       resp = @s3.get_object(
         bucket: bucket,
         key: key,
       )
 
+      body = resp.body.read
+
+      logger.info("download:ok bucket=#{bucket} key=#{key} size=#{body.bytesize}")
+
       Result.new(
         key: key,
-        bucket: bucket,
-        etag: resp.etag,
-        body: resp.body.read,
+        body: body
       )
     end
 
     def delete(bucket:, key:)
+      logger.info("delete:start bucket=#{bucket} key=#{key}")
+
       @s3.delete_object(
         bucket: bucket,
         key: key,
       )
 
-      Result.new(
-        key: key,
-        bucket: bucket,
-      )
+      logger.info("delete:ok bucket=#{bucket} key=#{key}")
+
+      Result.new(key: key)
     end
   end
 end

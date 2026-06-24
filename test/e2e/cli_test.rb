@@ -1,9 +1,6 @@
 # frozen_string_literal: true
 
-require 'tempfile'
-require 'open3'
-require 'securerandom'
-require 'minitest/autorun'
+require_relative '../test_helper'
 
 class CliTest < Minitest::Test
   BIN = [RbConfig.ruby, 'exe/r2'].freeze
@@ -61,6 +58,8 @@ class CliTest < Minitest::Test
     with_temp_file do |download_path|
       assert_success 'download', key, download_path
       assert_equal original_content, File.read(download_path)
+
+      FileUtils.rm_f(download_path)
     end
 
     @keys_to_cleanup << key
