@@ -23,7 +23,7 @@ class R2ClientIntegrationTest < Minitest::Test
     result = @client.upload(
       bucket: BUCKET,
       key: @key,
-      body: 'test-body',
+      body: 'data',
     )
 
     assert_instance_of R2::Client::Result, result

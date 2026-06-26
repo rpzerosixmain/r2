@@ -10,5 +10,7 @@ require 'open3'
 require 'securerandom'
 require 'stringio'
 require 'tempfile'
+require 'fileutils'
+
 
 require 'r2'
