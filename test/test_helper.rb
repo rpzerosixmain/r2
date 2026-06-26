@@ -6,11 +6,15 @@ require 'dotenv'
 Dotenv.load(*Dir['.env*'])
 
 require 'minitest/autorun'
+
 require 'open3'
 require 'securerandom'
 require 'stringio'
 require 'tempfile'
 require 'fileutils'
 
-
 require 'r2'
+
+Dir[File.join(__dir__, 'support', '**', '*.rb')].each do |file|
+  require file
+end

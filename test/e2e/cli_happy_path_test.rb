@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
-require_relative '../support/e2e_test'
+require_relative 'cli_test'
 
-class CliHappyPathTest < E2ETest
+
+class CliHappyPathTest < CLITest
   def test_list_returns_all_objects_from_bucket
     assert_success 'list'
   end

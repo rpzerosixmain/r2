@@ -2,7 +2,7 @@
 
 require_relative '../test_helper'
 
-class E2ETest < Minitest::Test
+class CLITest < Minitest::Test
   BIN = [RbConfig.ruby, 'exe/r2'].freeze
 
   def setup

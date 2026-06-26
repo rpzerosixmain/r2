@@ -25,7 +25,7 @@ module R2
         options: options,
       )
 
-      say("[R2] uploaded: #{result.key}")
+      say("[R2] upload -> #{result.key}")
     end
 
     desc 'download KEY [PATH]', 'Download a file from R2'
@@ -36,7 +36,7 @@ module R2
         options: options,
       )
 
-      say("[R2] downloaded: #{result.key}")
+      say("[R2] download -> #{result.key}")
     end
 
     desc 'delete KEY', 'Remove a file from R2'
@@ -46,7 +46,7 @@ module R2
         options: options,
       )
 
-      say("[R2] deleted: #{result.key}")
+      say("[R2] delete -> #{result.key}")
     end
 
     desc 'list', 'List files in R2 bucket'
@@ -54,12 +54,12 @@ module R2
       items = gateway.list(options: options)
 
       if items.empty?
-        say('[R2] bucket is empty')
+        say('[R2] list -> bucket is empty')
         return
       end
 
       items.each do |item|
-        say("[R2] #{item.key}")
+        say("[R2] list -> #{item.key}")
       end
     end
 

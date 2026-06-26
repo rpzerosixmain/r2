@@ -1,112 +1,112 @@
 # frozen_string_literal: true
 
 require_relative '../test_helper'
-class R2GatewayTest < Minitest::Test
+
+class GatewayTest < Minitest::Test
   def setup
     @bucket = 'test-bucket'
     @storage = {}
 
-    @client = fake_client(@storage)
+    @client = FakeClient.new(@storage)
     @gateway = R2::Gateway.new(client: @client)
+
+    @tmp_dir = Dir.mktmpdir
   end
 
-  def fake_client(storage)
-    Class.new do
-      def initialize(storage)
-        @storage = storage
-      end
-
-      def upload(key:, bucket:, body:)
-        @storage[bucket] ||= {}
-        @storage[bucket][key] = body
-        true
-      end
-
-      def download(key:, bucket:)
-        Struct.new(:body).new(@storage.dig(bucket, key))
-      end
-
-      def delete(key:, bucket:)
-        @storage[bucket].delete(key)
-        true
-      end
-
-      def list(bucket:)
-        keys = @storage[bucket].keys
-
-        Struct.new(:contents).new(
-          keys.map { |k| Struct.new(:key).new(k) },
-        )
-      end
-    end.new(storage)
+  def teardown
+    FileUtils.remove_entry(@tmp_dir) if @tmp_dir && Dir.exist?(@tmp_dir)
   end
 
-  def test_full_lifecycle_upload_list_download_delete
-    Dir.mktmpdir do |dir|
-      file_path = File.join(dir, 'file.txt')
-      File.write(file_path, 'hello integration')
+  def test_upload_and_list
+    create_file('file.txt', 'data')
 
-      @gateway.upload(
-        path: file_path,
-        options: { bucket: @bucket },
-      )
+    @gateway.upload(
+      path: file_path('file.txt'),
+      options: { bucket: @bucket },
+    )
 
-      assert_equal 'hello integration', @storage[@bucket]['file.txt']
+    assert_equal ['file.txt'], list_keys
+    assert_equal 'data', @storage[@bucket]['file.txt']
+  end
 
-      list_result = @gateway.list(options: { bucket: @bucket })
-      keys = list_result.contents.map(&:key)
+  def test_download_writes_file_and_returns_body
+    create_storage_file('file.txt', 'data')
 
-      assert_equal ['file.txt'], keys
-
-      Dir.chdir(dir) do
-        result = @gateway.download(
-          key: 'file.txt',
-          options: { bucket: @bucket },
-        )
-
-        assert_equal 'hello integration', File.read('file.txt')
-        assert_equal 'hello integration', result.body
-      end
-
-      @gateway.delete(
+    Dir.chdir(@tmp_dir) do
+      result = @gateway.download(
         key: 'file.txt',
         options: { bucket: @bucket },
       )
 
-      assert @storage[@bucket].empty?
+      assert File.exist?('file.txt')
+      assert_equal 'data', File.read('file.txt')
+      assert_equal 'data', result.body
     end
   end
 
-  def test_upload_uses_filename_as_key
-    Dir.mktmpdir do |dir|
-      file_path = File.join(dir, 'auto_key.txt')
-      File.write(file_path, 'data')
+  def test_download_uses_custom_path
+    create_storage_file('file.txt', 'data')
 
-      @gateway.upload(
-        path: file_path,
+    Dir.chdir(@tmp_dir) do
+      @gateway.download(
+        key: 'file.txt',
+        path: 'custom.txt',
         options: { bucket: @bucket },
       )
 
-      assert_equal 'data', @storage[@bucket]['auto_key.txt']
+      assert File.exist?('custom.txt')
+      assert_equal 'data', File.read('custom.txt')
     end
   end
 
-  def test_download_without_path_writes_to_current_directory
-    Dir.mktmpdir do |dir|
-      @storage[@bucket] = {
-        'file.txt' => 'hello current dir',
-      }
+  def test_delete_removes_object
+    create_storage_file('file.txt', 'data')
 
-      Dir.chdir(dir) do
-        result = @gateway.download(
-          key: 'file.txt',
-          options: { bucket: @bucket },
-        )
+    @gateway.delete(
+      key: 'file.txt',
+      options: { bucket: @bucket },
+    )
 
-        assert File.exist?('file.txt')
-        assert_equal 'hello current dir', File.read('file.txt')
-        assert_equal 'hello current dir', result.body
-      end
+    assert @storage[@bucket].empty?
+  end
+
+  def test_upload_uses_filename_as_key
+    create_file('auto_key.txt', 'data')
+
+    @gateway.upload(
+      path: file_path('auto_key.txt'),
+      options: { bucket: @bucket },
+    )
+
+    assert_equal 'data', @storage[@bucket]['auto_key.txt']
+  end
+
+  def test_missing_bucket_raises_error
+    create_file('file.txt', 'data')
+
+    assert_raises(KeyError) do
+      @gateway.upload(path: file_path('file.txt'))
     end
+  end
+
+  private
+
+  def file_path(name)
+    File.join(@tmp_dir, name)
+  end
+
+  def create_file(name, content)
+    File.write(file_path(name), content)
+  end
+
+  def create_storage_file(name, content)
+    @storage[@bucket] ||= {}
+    @storage[@bucket][name] = content
+  end
+
+  def list_keys
+    @gateway.list(options: { bucket: @bucket })
+            .contents
+            .map(&:key)
   end
 end

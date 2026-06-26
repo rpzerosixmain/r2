@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
-require_relative '../support/e2e_test'
+require_relative 'cli_test'
 
-class CliErrorHandlingTest < E2ETest
+
+
+class CliErrorHandlingTest < CLITest
   def test_list_fails_for_nonexistent_bucket
     assert_failure(
       'list',

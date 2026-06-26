@@ -19,8 +19,9 @@ client = R2::Client.new(
   secret_access_key: ENV.fetch('R2_SECRET_ACCESS_KEY'),
   endpoint: ENV.fetch('R2_ENDPOINT'),
   region: ENV.fetch('R2_REGION', 'auto'),
-  logger: logger,
 )
+
+client.logger = logger
 
 gateway = R2::Gateway.new(
   client: client,

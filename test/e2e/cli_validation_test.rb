@@ -1,8 +1,9 @@
 # frozen_string_literal: true
 
-require_relative '../support/e2e_test'
+require_relative 'cli_test'
 
-class CliValidationTest < E2ETest
+
+class CliValidationTest < CLITest
   def test_upload_requires_path
     assert_failure 'upload'
   end

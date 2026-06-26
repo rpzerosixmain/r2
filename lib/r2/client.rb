@@ -13,15 +13,14 @@ module R2
       end
     end
 
+    attr_accessor :logger
+
     def initialize(
       access_key_id:,
       secret_access_key:,
       endpoint:,
-      region: 'auto',
-      logger: nil
+      region: 'auto'
     )
-      @logger = logger
-
       @s3 = Aws::S3::Client.new(
         access_key_id: access_key_id,
         secret_access_key: secret_access_key,
@@ -83,7 +82,8 @@ module R2
            Aws::S3::Errors::NoSuchKey,
            Aws::S3::Errors::AccessDenied,
            Aws::Errors::ServiceError => e
-      @logger&.error(e.message)
+
+      logger&.error(e.message)
 
       raise R2::Error, e.message
     end
