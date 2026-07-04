@@ -6,12 +6,12 @@ module R2
   # R2 gem CLI.
   #
   # Command-line interface that delegates storage operations
-  # to R2::Client.
+  # to R2::Storage.
   class CLI < Thor
     class << self
-      # Client injected externally (e.g., bin/r2).
+      # Storage instance injected externally (e.g., bin/r2).
       # It is required for CLI execution.
-      attr_accessor :client
+      attr_accessor :storage
     end
 
     # Failures should terminate the process with a non-zero exit code.
@@ -30,12 +30,10 @@ module R2
     # Reads the entire file into memory before uploading.
     #
     # @param path [String] local file path
-
     desc 'upload PATH', 'Upload a file to R2'
-
     def upload(path)
-      result = client.upload(
-        key: path,
+      result = storage.upload(
+        key: File.basename(path),
         bucket: options.fetch(:bucket),
         body: File.binread(path),
       )
@@ -45,9 +43,9 @@ module R2
 
     private
 
-    # Access to the client injected into the class.
-    def client
-      self.class.client
+    # Access to the storage instance injected into the class.
+    def storage
+      self.class.storage
     end
   end
 end

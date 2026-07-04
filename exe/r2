@@ -7,26 +7,26 @@ require 'logger'
 
 require 'r2'
 
-# Logger padrão da CLI (não usar logger global do R2)
+# Default CLI logger (do not use R2 global logger)
 logger = Logger.new($stdout)
 logger.level = Logger::ERROR
 
-# Formato simplificado para saída de CLI
+# Simplified format for CLI output
 logger.formatter = proc do |_severity, _datetime, _progname, msg|
   "[R2] #{msg}\n"
 end
 
-client = R2::Client.new(
+storage = R2::Storage.new(
   access_key_id: ENV.fetch('R2_ACCESS_KEY_ID'),
   secret_access_key: ENV.fetch('R2_SECRET_ACCESS_KEY'),
   endpoint: ENV.fetch('R2_ENDPOINT'),
   region: ENV.fetch('R2_REGION', 'auto'),
 )
 
-client.logger = logger
+storage.logger = logger
 
-# Injeta client na CLI (dependency injection simples)
-R2::CLI.client = client
+# Injects storage into CLI (simple dependency injection)
+R2::CLI.storage = storage
 
 begin
   R2::CLI.start(ARGV)

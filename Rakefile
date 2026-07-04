@@ -10,10 +10,10 @@ namespace :test do
     t.verbose = false
   end
 
-  desc 'Run integration tests'
-  Rake::TestTask.new(:integration) do |t|
+  desc 'Run unit tests'
+  Rake::TestTask.new(:unit) do |t|
     t.libs << 'test'
-    t.pattern = 'test/integration/**/*_test.rb'
+    t.pattern = 'test/unit/**/*_test.rb'
     t.verbose = false
   end
 

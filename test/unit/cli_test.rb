@@ -3,24 +3,45 @@
 require_relative '../test_helper'
 
 class CLITest < Minitest::Test
-  include TempFileHelper
-
   def setup
-    @client = FakeClient.new
-    R2::CLI.client = @client
+    @storage = FakeStorage.new
+    R2::CLI.storage = @storage
   end
 
-  def test_cli_upload_sends_file_to_client_and_prints_output
-    with_text do |path|
-      stdout = capture_io do
-        R2::CLI.start(['upload', path])
-      end.first
+  def test_upload_stores_file_and_outputs_result
+    Tempfile.create(['example', '.txt']) do |file|
+      file.binmode
+      file.write('hello world')
+      file.flush
 
-      assert_equal path, @client.key
-      assert_equal 'main', @client.bucket
-      assert_equal File.binread(path), @client.body
+      capture_io do
+        R2::CLI.start(['upload', file.path])
+      end
 
-      assert_includes stdout, "[R2] upload -> #{path}"
+      assert_equal 'main', @storage.bucket
+      assert_equal File.basename(file.path), @storage.key
+      assert_equal 'hello world', @storage.body
+    end
+  end
+
+  def test_upload_with_custom_bucket
+    Tempfile.create(['example', '.txt']) do |file|
+      file.binmode
+      file.write('hello world')
+      file.flush
+
+      capture_io do
+        R2::CLI.start([
+                        'upload',
+                        file.path,
+                        '--bucket',
+                        'images',
+                      ])
+      end
+
+      assert_equal 'images', @storage.bucket
+      assert_equal File.basename(file.path), @storage.key
+      assert_equal 'hello world', @storage.body
     end
   end
 end
