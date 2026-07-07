@@ -24,6 +24,28 @@ class CLITest < Minitest::Test
     end
   end
 
+  def test_upload_raises_file_error_when_missing
+    error = assert_raises(R2::FileError) do
+      capture_io do
+        R2::CLI.start(['upload', '/no/such/file.txt'])
+      end
+    end
+
+    assert_match(/file not found/, error.message)
+  end
+
+  def test_upload_raises_file_error_for_directory
+    Dir.mktmpdir do |dir|
+      error = assert_raises(R2::FileError) do
+        capture_io do
+          R2::CLI.start(['upload', dir])
+        end
+      end
+
+      assert_match(/not a file/, error.message)
+    end
+  end
+
   def test_upload_with_custom_bucket
     Tempfile.create(['example', '.txt']) do |file|
       file.binmode

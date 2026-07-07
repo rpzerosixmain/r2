@@ -16,21 +16,40 @@ logger.formatter = proc do |_severity, _datetime, _progname, msg|
   "[R2] #{msg}\n"
 end
 
-storage = R2::Storage.new(
-  access_key_id: ENV.fetch('R2_ACCESS_KEY_ID'),
-  secret_access_key: ENV.fetch('R2_SECRET_ACCESS_KEY'),
-  endpoint: ENV.fetch('R2_ENDPOINT'),
-  region: ENV.fetch('R2_REGION', 'auto'),
-)
+# Reads and validates the credentials required to talk to R2.
+#
+# @raise [R2::ConfigurationError] when a required variable is missing or blank
+def r2_config
+  required = %w[R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_ENDPOINT]
+  missing = required.select { |name| ENV[name].to_s.strip.empty? }
 
-storage.logger = logger
+  unless missing.empty?
+    raise R2::ConfigurationError,
+          "missing required environment variables: #{missing.join(', ')}"
+  end
 
-# Injects storage into CLI (simple dependency injection)
-R2::CLI.storage = storage
+  {
+    access_key_id: ENV.fetch('R2_ACCESS_KEY_ID'),
+    secret_access_key: ENV.fetch('R2_SECRET_ACCESS_KEY'),
+    endpoint: ENV.fetch('R2_ENDPOINT'),
+    region: ENV.fetch('R2_REGION', 'auto'),
+  }
+end
 
 begin
+  storage = R2::Storage.new(**r2_config)
+  storage.logger = logger
+
+  # Injects storage into CLI (simple dependency injection)
+  R2::CLI.storage = storage
+
   R2::CLI.start(ARGV)
+rescue R2::Error => e
+  # Expected, user-facing failures: show a concise message only.
+  warn("[R2] #{e.message}")
+  exit(1)
 rescue StandardError => e
+  # Unexpected failures: log the full details for debugging.
   logger.error(e.full_message)
 
   warn("[R2] #{e.message}")

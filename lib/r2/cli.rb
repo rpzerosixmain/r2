@@ -35,13 +35,24 @@ module R2
       result = storage.upload(
         key: File.basename(path),
         bucket: options.fetch(:bucket),
-        body: File.binread(path),
+        body: read_file(path),
       )
 
       say("[R2] upload -> #{result[:key]}")
     end
 
     private
+
+    # Reads a local file, raising a friendly R2::FileError on common problems.
+    #
+    # @raise [R2::FileError] when the path is missing, not a file or unreadable
+    def read_file(path)
+      raise R2::FileError, "file not found: #{path}" unless File.exist?(path)
+      raise R2::FileError, "not a file: #{path}" unless File.file?(path)
+      raise R2::FileError, "file not readable: #{path}" unless File.readable?(path)
+
+      File.binread(path)
+    end
 
     # Access to the storage instance injected into the class.
     def storage

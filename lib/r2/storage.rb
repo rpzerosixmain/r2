@@ -54,16 +54,14 @@ module R2
 
     # Executes a block with standardized storage error handling.
     #
-    # Converts AWS SDK errors into R2::Error and logs them if a logger is present.
+    # Converts AWS SDK service and networking errors into R2::StorageError,
+    # logging them first when a logger is present. The original error is kept
+    # as the exception cause.
     def handle_errors
       yield
-    rescue Aws::S3::Errors::NoSuchBucket,
-           Aws::S3::Errors::NoSuchKey,
-           Aws::S3::Errors::AccessDenied,
-           Aws::Errors::ServiceError => e
-
+    rescue Aws::Errors::ServiceError, Seahorse::Client::NetworkingError => e
       logger&.error(e.message)
-      raise R2::Error, e.message
+      raise R2::StorageError, e.message
     end
   end
 end

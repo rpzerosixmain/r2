@@ -33,7 +33,7 @@ class StorageTest < Minitest::Test
   def test_upload_raises_r2_error
     @s3.error = Aws::S3::Errors::NoSuchBucket.new(nil, 'Bucket not found')
 
-    error = assert_raises(R2::Error) do
+    error = assert_raises(R2::StorageError) do
       @storage.upload(
         bucket: 'bucket',
         key: 'file.txt',
@@ -42,6 +42,32 @@ class StorageTest < Minitest::Test
     end
 
     assert_equal 'Bucket not found', error.message
+    assert_kind_of R2::Error, error
+  end
+
+  def test_upload_wraps_networking_error
+    @s3.error = Seahorse::Client::NetworkingError.new(SocketError.new('boom'))
+
+    error = assert_raises(R2::StorageError) do
+      @storage.upload(
+        bucket: 'bucket',
+        key: 'file.txt',
+        body: 'content',
+      )
+    end
+
+    assert_equal 'boom', error.message
+  end
+
+  def test_upload_keeps_original_error_as_cause
+    original = Aws::S3::Errors::AccessDenied.new(nil, 'Access denied')
+    @s3.error = original
+
+    error = assert_raises(R2::StorageError) do
+      @storage.upload(bucket: 'bucket', key: 'file.txt', body: 'content')
+    end
+
+    assert_same original, error.cause
   end
 
   def test_upload_logs_error
