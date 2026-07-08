@@ -14,8 +14,13 @@ module R2
       # It is required for CLI execution.
       attr_accessor :storage
 
-      # Logger injected externally; optional and owned by the CLI layer.
-      attr_accessor :logger
+      # Logger injected externally; owned by the CLI layer.
+      attr_writer :logger
+
+      # Logger to use, defaulting to a no-op NullLogger when none is injected.
+      def logger
+        @logger ||= NullLogger.new
+      end
     end
 
     # Failures should terminate the process with a non-zero exit code.
@@ -46,7 +51,7 @@ module R2
       apply_log_level
 
       bucket = options.fetch(:bucket)
-      logger&.info("uploading #{path} to bucket #{bucket}")
+      logger.info("uploading #{path} to bucket #{bucket}")
 
       result = storage.upload(
         key: File.basename(path),
@@ -54,7 +59,7 @@ module R2
         body: read_file(path),
       )
 
-      logger&.info("uploaded #{result[:key]}")
+      logger.info("uploaded #{result[:key]}")
       say("[R2] upload -> #{result[:key]}")
     end
 
@@ -62,8 +67,6 @@ module R2
 
     # Adjusts the logger verbosity based on the --verbose flag.
     def apply_log_level
-      return unless logger
-
       logger.level = options[:verbose] ? Logger::INFO : Logger::ERROR
     end
 
@@ -83,7 +86,7 @@ module R2
       self.class.storage
     end
 
-    # Access to the logger injected into the class, if any.
+    # Access to the logger injected into the class.
     def logger
       self.class.logger
     end

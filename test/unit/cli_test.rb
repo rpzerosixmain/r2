@@ -67,6 +67,14 @@ class CLITest < Minitest::Test
     end
   end
 
+  def test_defaults_to_null_logger_and_uploads_without_injected_logger
+    assert_instance_of R2::NullLogger, R2::CLI.logger
+
+    with_upload([])
+
+    assert_equal File.basename(@last_path), @storage.key
+  end
+
   def test_verbose_lowers_log_level_and_logs
     output = StringIO.new
     logger = build_logger(output)
@@ -102,6 +110,7 @@ class CLITest < Minitest::Test
     Tempfile.create(['example', '.txt']) do |file|
       file.write('hello world')
       file.flush
+      @last_path = file.path
 
       capture_io do
         R2::CLI.start(['upload', file.path, *extra_args])
