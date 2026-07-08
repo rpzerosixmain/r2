@@ -13,6 +13,9 @@ module R2
       # Storage instance injected externally (e.g., bin/r2).
       # It is required for CLI execution.
       attr_accessor :storage
+
+      # Logger injected externally; optional and owned by the CLI layer.
+      attr_accessor :logger
     end
 
     # Failures should terminate the process with a non-zero exit code.
@@ -80,9 +83,9 @@ module R2
       self.class.storage
     end
 
-    # Logger owned by the injected storage, if any.
+    # Access to the logger injected into the class, if any.
     def logger
-      storage.logger
+      self.class.logger
     end
   end
 end

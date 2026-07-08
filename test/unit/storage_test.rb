@@ -5,14 +5,12 @@ require_relative '../test_helper'
 class StorageTest < Minitest::Test
   def setup
     @s3 = FakeS3.new
-    @logger = FakeLogger.new
 
     @storage = R2::Storage.new(
       access_key_id: 'key',
       secret_access_key: 'secret',
       endpoint: 'http://localhost',
       s3: @s3,
-      logger: @logger,
     )
   end
 
@@ -68,19 +66,5 @@ class StorageTest < Minitest::Test
     end
 
     assert_same original, error.cause
-  end
-
-  def test_upload_logs_error
-    @s3.error = Aws::S3::Errors::NoSuchBucket.new(nil, 'Bucket not found')
-
-    assert_raises(R2::Error) do
-      @storage.upload(
-        bucket: 'bucket',
-        key: 'file.txt',
-        body: 'content',
-      )
-    end
-
-    assert_equal 'Bucket not found', @logger.message
   end
 end

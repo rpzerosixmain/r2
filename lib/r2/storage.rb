@@ -6,17 +6,15 @@ module R2
   # Storage responsible for encapsulating S3/R2 operations.
   #
   # Acts as an abstraction layer between the application and the AWS SDK,
-  # centralizing storage operations and error handling.
+  # centralizing storage operations and error translation. Logging is
+  # intentionally left to the caller to keep this layer decoupled.
   class Storage
-    attr_accessor :logger
-
     def initialize(
       access_key_id:,
       secret_access_key:,
       endpoint:,
       region: 'auto',
-      s3: nil,
-      logger: nil
+      s3: nil
     )
       @s3 = s3 || Aws::S3::Client.new(
         access_key_id: access_key_id,
@@ -24,8 +22,6 @@ module R2
         endpoint: endpoint,
         region: region,
       )
-
-      @logger = logger
     end
 
     # Uploads an object to the storage bucket.
@@ -55,12 +51,10 @@ module R2
     # Executes a block with standardized storage error handling.
     #
     # Converts AWS SDK service and networking errors into R2::StorageError,
-    # logging them first when a logger is present. The original error is kept
-    # as the exception cause.
+    # keeping the original error as the exception cause.
     def handle_errors
       yield
     rescue Aws::Errors::ServiceError, Seahorse::Client::NetworkingError => e
-      logger&.error(e.message)
       raise R2::StorageError, e.message
     end
   end

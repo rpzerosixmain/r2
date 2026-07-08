@@ -6,6 +6,11 @@ class CLITest < Minitest::Test
   def setup
     @storage = FakeStorage.new
     R2::CLI.storage = @storage
+    R2::CLI.logger = nil
+  end
+
+  def teardown
+    R2::CLI.logger = nil
   end
 
   def test_upload_stores_file_and_outputs_result
@@ -63,24 +68,26 @@ class CLITest < Minitest::Test
   end
 
   def test_verbose_lowers_log_level_and_logs
-    io = StringIO.new
-    @storage.logger = build_logger(io)
+    output = StringIO.new
+    logger = build_logger(output)
+    R2::CLI.logger = logger
 
     with_upload(['--verbose'])
 
-    assert_equal Logger::INFO, @storage.logger.level
-    assert_match(/uploading/, io.string)
-    assert_match(/uploaded/, io.string)
+    assert_equal Logger::INFO, logger.level
+    assert_match(/uploading/, output.string)
+    assert_match(/uploaded/, output.string)
   end
 
   def test_without_verbose_keeps_error_level_and_is_quiet
-    io = StringIO.new
-    @storage.logger = build_logger(io)
+    output = StringIO.new
+    logger = build_logger(output)
+    R2::CLI.logger = logger
 
     with_upload([])
 
-    assert_equal Logger::ERROR, @storage.logger.level
-    assert_empty io.string
+    assert_equal Logger::ERROR, logger.level
+    assert_empty output.string
   end
 
   private

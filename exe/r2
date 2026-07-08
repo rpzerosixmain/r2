@@ -7,7 +7,7 @@ require 'logger'
 
 require 'r2'
 
-# Default CLI logger (do not use R2 global logger)
+# CLI logger; verbosity is controlled by the --verbose flag inside the CLI.
 logger = Logger.new($stdout)
 logger.level = Logger::ERROR
 
@@ -16,22 +16,21 @@ logger.formatter = proc do |_severity, _datetime, _progname, msg|
   "[R2] #{msg}\n"
 end
 
-begin
-  storage = R2::Storage.new(**R2::Configuration.from_env.to_h)
-  storage.logger = logger
+# Simple dependency injection into the CLI layer.
+R2::CLI.logger = logger
 
-  # Injects storage into CLI (simple dependency injection)
-  R2::CLI.storage = storage
+begin
+  R2::CLI.storage = R2::Storage.new(**R2::Configuration.from_env.to_h)
 
   R2::CLI.start(ARGV)
 rescue R2::Error => e
-  # Expected, user-facing failures: show a concise message only.
+  # Expected, user-facing failures: log the message and show it concisely.
+  logger.error(e.message)
   warn("[R2] #{e.message}")
   exit(1)
 rescue StandardError => e
   # Unexpected failures: log the full details for debugging.
   logger.error(e.full_message)
-
   warn("[R2] #{e.message}")
   exit(1)
 end
